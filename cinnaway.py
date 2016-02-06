@@ -58,7 +58,7 @@ def auto_away_cb(userdata):
 
   status = (
     subprocess
-    .Popen([""], shell=True, stdout=subprocess.PIPE)
+    .Popen(["cinnamon-screensaver-command", "-q"], shell=True, stdout=subprocess.PIPE)
     .stdout
     .read()
   )
