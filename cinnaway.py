@@ -1,9 +1,9 @@
-__module_name__ = "Cinnamon Auto-Away (CinnAway)"
-__module_version__ = "0.1"
-__module_description__ = "Checks if your cinnamon-screensaver is running and then sets your irc status to away"
-__author__ = "mikechau"
+__module_name__ = 'Cinnamon Auto-Away (CinnAway)'
+__module_version__ = '0.1'
+__module_description__ = 'Checks if your cinnamon-screensaver is running and then sets your irc status to away'
+__author__ = 'mikechau'
 
-full_name = "{} v{} by {}".format(__module_name__,__module_version__,__author__)
+full_name = '{} v{} by {}'.format(__module_name__, __module_version__, __author__)
 
 import hexchat
 import subprocess
@@ -24,21 +24,21 @@ def end_timer():
   hook = None
 
 def set_timer(action):
-  if action == "stop":
+  if action == 'stop':
     end_timer()
-  elif action == "start":
+  elif action == 'start':
     start_timer()
 
 def print_status(action=None):
-  if action == "stop":
-    print("CinnAway has stopped.")
-  elif action == "start":
-    print("CinnAway has started.")
+  if action == 'stop':
+    print('CinnAway has stopped.')
+  elif action == 'start':
+    print('CinnAway has started.')
   else:
     if hook == None:
-      print("CinnAway is not running.")
+      print('CinnAway is not running.')
     else:
-      print("CinnAway is running.")
+      print('CinnAway is running.')
 
 def cinnaway_cb(word, word_eol, userdata):
   global hook
@@ -53,32 +53,35 @@ def cinnaway_cb(word, word_eol, userdata):
   return hexchat.EAT_ALL
 
 def auto_away_cb(userdata):
-  global away_cmd
-  global back_cmd
-
-  status = (
+  stdout, stderr = (
     subprocess
-    .Popen(["cinnamon-screensaver-command", "-q"], shell=True, stdout=subprocess.PIPE)
-    .stdout
-    .read()
+    .Popen("/bin/bash -lc 'cinnamon-screensaver-command -q'", shell=True, stdout=subprocess.PIPE)
+    .communicate()
   )
 
-  if "inactive" in status:
-    exec_cmd(back_cmd)
+  if 'inactive' in stdout:
+    exec_cmd('back')
   else:
-    exec_cmd(away_cmd)
-  
+    exec_cmd('away')
+
   return 1
 
 def exec_cmd(cmd):
+  global away_cmd
+  global back_cmd
+
   channels = hexchat.get_list('channels')
   for channel in channels:
     if channel.type == 1: # channel for a server
-      channel.context.command(cmd)
+      status = channel.context.get_info('away')
+
+      if cmd == 'away' and status == None:
+        channel.context.command(away_cmd)
+      elif cmd == 'back' and status != None:
+        channel.context.command(back_cmd)
 
 start_timer()
 
 hexchat.hook_command('cinnaway', cinnaway_cb, help=help_msg)
 
 print(__module_name__ + ' version ' + __module_version__ + ' loaded.')
-
