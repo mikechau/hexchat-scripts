@@ -7,6 +7,8 @@ full_name = '{} v{} by {}'.format(__module_name__, __module_version__, __author_
 
 import hexchat
 import subprocess
+import fcntl
+import os
 
 hook = None
 away_cmd = 'away I am away right meow.'
@@ -53,11 +55,8 @@ def cinnaway_cb(word, word_eol, userdata):
   return hexchat.EAT_ALL
 
 def auto_away_cb(userdata):
-  stdout, stderr = (
-    subprocess
-    .Popen("/bin/bash -lc 'cinnamon-screensaver-command -q'", shell=True, stdout=subprocess.PIPE)
-    .communicate()
-  )
+  cmd = subprocess.Popen("/bin/bash -lc 'cinnamon-screensaver-command -q'", shell=True, stdout=subprocess.PIPE)
+  stdout = non_block_read(cmd.stdout)
 
   if 'inactive' in stdout:
     exec_cmd('back')
@@ -79,6 +78,15 @@ def exec_cmd(cmd):
         channel.context.command(away_cmd)
       elif cmd == 'back' and status != None:
         channel.context.command(back_cmd)
+
+def non_block_read(output):
+    fd = output.fileno()
+    fl = fcntl.fcntl(fd, fcntl.F_GETFL)
+    fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
+    try:
+        return output.read()
+    except:
+        return ''
 
 start_timer()
 
