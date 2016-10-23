@@ -32,6 +32,8 @@ def set_timer(action):
     start_timer()
 
 def print_status(action=None):
+  global hook
+
   if action == 'stop':
     print('CinnAway has stopped.')
   elif action == 'start':
@@ -43,9 +45,7 @@ def print_status(action=None):
       print('CinnAway is running.')
 
 def cinnaway_cb(word, word_eol, userdata):
-  global hook
-
-  if len(word) > 2:
+  if len(word) > 1:
     action = word[1]
     set_timer(action)
     print_status(action)
