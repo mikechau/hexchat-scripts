@@ -6,9 +6,8 @@ __author__ = 'mikechau'
 full_name = '{} v{} by {}'.format(__module_name__, __module_version__, __author__)
 
 import hexchat
-import subprocess
-import fcntl
-import os
+from subprocess import PIPE, Popen
+from threading import Thread
 
 hook = None
 away_cmd = 'away I am away right meow.'
@@ -47,21 +46,23 @@ def print_status(action=None):
 def cinnaway_cb(word, word_eol, userdata):
   if len(word) > 1:
     action = word[1]
-    set_timer(action)
-    print_status(action)
+    if action == 'stop' or action == 'start':
+      set_timer(action)
+      print_status(action)
+    elif action == 'run':
+      auto_away_cb(None)
+    else:
+      print_status()
   else:
     print_status()
 
   return hexchat.EAT_ALL
 
 def auto_away_cb(userdata):
-  cmd = subprocess.Popen("/bin/bash -lc 'cinnamon-screensaver-command -q'", shell=True, stdout=subprocess.PIPE)
-  stdout = non_block_read(cmd.stdout)
+  t = Thread(target=run_check, args=())
 
-  if 'inactive' in stdout:
-    exec_cmd('back')
-  else:
-    exec_cmd('away')
+  t.daemon = True
+  t.start()
 
   return 1
 
@@ -79,14 +80,16 @@ def exec_cmd(cmd):
       elif cmd == 'back' and status != None:
         channel.context.command(back_cmd)
 
-def non_block_read(output):
-    fd = output.fileno()
-    fl = fcntl.fcntl(fd, fcntl.F_GETFL)
-    fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
-    try:
-        return output.read()
-    except:
-        return ''
+def run_check():
+  stdout, stderr = (
+    Popen("/bin/bash -lc 'cinnamon-screensaver-command -q'", shell=True, stdout=PIPE)
+    .communicate()
+  )
+
+  if 'inactive' in stdout:
+    exec_cmd('back')
+  else:
+    exec_cmd('away')
 
 start_timer()
 
